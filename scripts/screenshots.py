@@ -35,7 +35,7 @@ def main():
                     if view == "customers":
                         page.locator(".cust-head").first.click()
                         page.wait_for_selector(".cust-body .big-prob")
-                    page.wait_for_timeout(400)
+                    page.wait_for_timeout(2000)  # let count-ups and chart draw-ins finish
                     overflow = page.evaluate("document.documentElement.scrollWidth - window.innerWidth")
                     if overflow > 0:
                         problems.append(f"{mode}/{scheme}/{view}: horizontal overflow {overflow}px")

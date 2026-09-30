@@ -14,30 +14,55 @@
   <a class="skip" href="#main">Skip to content</a>
   <header class="top">
     <div class="wrap top-inner">
-      <div class="brand">
+      <a class="brand" href="#/overview" aria-label="Churn risk dashboard, go to overview">
+        <img class="brand-mark" src="/static/favicon.svg" alt="" width="28" height="28">
         <h1>Churn risk dashboard</h1>
-        <p class="purpose">Finds the telecom customers most likely to leave, explains why, and suggests what to do about it.</p>
+      </a>
+      <button id="nav-toggle" class="icon-btn nav-toggle" type="button" aria-expanded="false" aria-controls="nav">
+        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5.5h14M3 10h14M3 14.5h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+        <span>Menu</span>
+      </button>
+      <nav id="nav" class="tabs" aria-label="Views">
+        <a href="#/overview" data-view="overview">Overview</a>
+        <a href="#/segments" data-view="segments">Segments</a>
+        <a href="#/customers" data-view="customers">Customers</a>
+        <a href="#/model" data-view="model">Model</a>
+      </nav>
+      <div id="theme" class="theme-switch" role="group" aria-label="Colour theme">
+        <button type="button" data-theme-choice="light" aria-pressed="false" title="Light theme">
+          <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><circle cx="10" cy="10" r="3.6" fill="currentColor"/><path d="M10 1.8v2.4M10 15.8v2.4M1.8 10h2.4M15.8 10h2.4M4.2 4.2l1.7 1.7M14.1 14.1l1.7 1.7M4.2 15.8l1.7-1.7M14.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <span class="t-text">Light</span>
+        </button>
+        <button type="button" data-theme-choice="dark" aria-pressed="false" title="Dark theme">
+          <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M16.5 12.6A7 7 0 0 1 7.4 3.5a7 7 0 1 0 9.1 9.1z" fill="currentColor"/></svg>
+          <span class="t-text">Dark</span>
+        </button>
+        <button type="button" data-theme-choice="auto" aria-pressed="true" title="Match system theme">
+          <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><circle cx="10" cy="10" r="6.5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M10 3.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg>
+          <span class="t-text">Auto</span>
+        </button>
       </div>
-      <button id="theme" class="theme-btn" type="button" aria-label="Colour theme: auto">Theme: auto</button>
     </div>
-    <nav class="wrap tabs" aria-label="Views">
-      <a href="#/overview" data-view="overview">Overview</a>
-      <a href="#/segments" data-view="segments">Segments</a>
-      <a href="#/customers" data-view="customers">Customers</a>
-      <a href="#/model" data-view="model">Model</a>
-    </nav>
   </header>
 
   <div class="wrap">
     <aside class="banner" aria-label="About this data">
-      <strong>Proof of concept</strong> on IBM's <em>Telco Customer Churn</em> sample data: a fictional California
+      <svg class="banner-icon" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M10 9v5M10 6.2v.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <p><strong>Proof of concept</strong> on IBM's <em>Telco Customer Churn</em> sample data: a fictional California
       telco with 7,043 customers (IBM Cognos Analytics base samples, via Kaggle; the source states no licence terms).
-      Figures cover the <span id="n-customers">1,409</span> held-out test customers, in US dollars.
+      Figures cover the <span id="n-customers">1,409</span> held-out test customers, in US dollars.</p>
     </aside>
   </div>
 
   <main id="main" class="wrap" tabindex="-1">
-    <section id="view-overview" class="view" aria-labelledby="h-overview"></section>
+    <section id="view-overview" class="view" aria-labelledby="h-overview">
+      <div class="skeleton-view" aria-hidden="true">
+        <div class="sk sk-title"></div>
+        <div class="sk sk-line"></div>
+        <div class="sk sk-kpis"></div>
+        <div class="sk sk-panel"></div>
+      </div>
+    </section>
     <section id="view-segments" class="view" aria-labelledby="h-segments" hidden></section>
     <section id="view-customers" class="view" aria-labelledby="h-customers" hidden></section>
     <section id="view-model" class="view" aria-labelledby="h-model" hidden></section>
