@@ -1,0 +1,27 @@
+# Secrets
+.env
+.env.*
+*.env
+
+# Notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Caches and environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.venv/
+venv/
+env/
+.DS_Store
+.idea/
+.vscode/
+
+# Raw dataset: not redistributed (no licence terms stated by the source).
+# Download it yourself for scripts/build_artifacts.py.
+data/*
+!data/README.md

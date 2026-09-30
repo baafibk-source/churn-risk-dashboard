@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Churn Risk Dashboard</title>
+  <meta name="description" content="Proof-of-concept churn dashboard: calibrated XGBoost risk scores, SHAP drivers and retention actions on the IBM Telco sample dataset.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="top">
+    <div class="wrap top-inner">
+      <div class="brand">
+        <h1>Churn risk dashboard</h1>
+        <p class="purpose">Finds the telecom customers most likely to leave, explains why, and suggests what to do about it.</p>
+      </div>
+      <button id="theme" class="theme-btn" type="button" aria-label="Colour theme: auto">Theme: auto</button>
+    </div>
+    <nav class="wrap tabs" aria-label="Views">
+      <a href="#/overview" data-view="overview">Overview</a>
+      <a href="#/segments" data-view="segments">Segments</a>
+      <a href="#/customers" data-view="customers">Customers</a>
+      <a href="#/model" data-view="model">Model</a>
+    </nav>
+  </header>
+
+  <div class="wrap">
+    <aside class="banner" aria-label="About this data">
+      <strong>Proof of concept</strong> on IBM's <em>Telco Customer Churn</em> sample data: a fictional California
+      telco with 7,043 customers (IBM Cognos Analytics base samples, via Kaggle; the source states no licence terms).
+      Figures cover the <span id="n-customers">1,409</span> held-out test customers, in US dollars.
+    </aside>
+  </div>
+
+  <main id="main" class="wrap" tabindex="-1">
+    <section id="view-overview" class="view" aria-labelledby="h-overview"></section>
+    <section id="view-segments" class="view" aria-labelledby="h-segments" hidden></section>
+    <section id="view-customers" class="view" aria-labelledby="h-customers" hidden></section>
+    <section id="view-model" class="view" aria-labelledby="h-model" hidden></section>
+  </main>
+
+  <footer class="wrap foot">
+    <p>Built by Kwame Baafi Boateng · XGBoost, SHAP, FastAPI, plain HTML/CSS/JS ·
+      Model from an MSc Business Analytics dissertation (University of Greenwich).</p>
+  </footer>
+  <div id="tooltip" class="tooltip" role="status" hidden></div>
+</body>
+</html>

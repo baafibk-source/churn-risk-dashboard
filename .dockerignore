@@ -1,0 +1,7 @@
+*
+!requirements.txt
+!app/
+!static/
+!artifacts/
+**/__pycache__
+**/*.pyc

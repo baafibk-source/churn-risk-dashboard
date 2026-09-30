@@ -1,0 +1,12 @@
+# Runtime dependencies (what the Space / Docker image installs).
+# xgboost-cpu (smaller, no CUDA) only ships Linux and Windows wheels; plain xgboost
+# is already CPU-only on macOS, so local Mac development uses that.
+fastapi==0.141.1
+starlette==1.7.0
+pydantic==2.13.5
+uvicorn==0.53.0
+httpx==0.28.1
+numpy==2.5.3
+scipy==1.18.1
+xgboost-cpu==3.4.1; sys_platform != "darwin"
+xgboost==3.4.1; sys_platform == "darwin"
