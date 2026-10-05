@@ -70,7 +70,8 @@ def test_runtime_auc_matches_report():
     pos = [c["probability"] for c in cs if c["churned"]]
     neg = [c["probability"] for c in cs if not c["churned"]]
     wins = sum((p > n) + 0.5 * (p == n) for p in pos for n in neg)
-    assert round(wins / (len(pos) * len(neg)), 4) == portfolio.report["roc_auc"]
+    assert round(wins / (len(pos) * len(neg)),
+                 4) == portfolio.report["roc_auc"]
 
 
 def test_score_ok_and_shap_adds_up():
@@ -108,7 +109,8 @@ def test_score_rejects_bad_profiles(name):
 
 
 def test_score_rejects_extra_and_missing_fields():
-    assert_generic_error(client.post("/api/score", json={**GOOD, "is_admin": True}), 422)
+    assert_generic_error(client.post(
+        "/api/score", json={**GOOD, "is_admin": True}), 422)
     missing = dict(GOOD)
     del missing["contract"]
     assert_generic_error(client.post("/api/score", json=missing), 422)
@@ -116,13 +118,15 @@ def test_score_rejects_extra_and_missing_fields():
 
 @pytest.mark.parametrize("raw", ["{not json", "[]", "null", '"text"', '{"tenure_months": NaN}', ""])
 def test_score_rejects_malformed_json(raw):
-    r = client.post("/api/score", content=raw, headers={"Content-Type": "application/json"})
+    r = client.post("/api/score", content=raw,
+                    headers={"Content-Type": "application/json"})
     assert_generic_error(r, 422)
 
 
 def test_body_size_cap():
     big = {**GOOD, "padding": "x" * 10_000}
-    r = client.post("/api/score", content=json.dumps(big), headers={"Content-Type": "application/json"})
+    r = client.post("/api/score", content=json.dumps(big),
+                    headers={"Content-Type": "application/json"})
     assert_generic_error(r, 413)
 
 
@@ -142,14 +146,17 @@ def test_bad_queries(url):
 
 
 def test_good_queries():
-    r = client.get("/api/summary?target_share=0.3&save_rate=0.5&contact_cost=0&offer_cost=0&horizon_months=24")
+    r = client.get(
+        "/api/summary?target_share=0.3&save_rate=0.5&contact_cost=0&offer_cost=0&horizon_months=24")
     assert r.status_code == 200 and r.json()["contacted"] == round(1409 * 0.3)
-    r = client.get("/api/segments?by=tenure_band&contract=Month-to-month&risk_band=High")
+    r = client.get(
+        "/api/segments?by=tenure_band&contract=Month-to-month&risk_band=High")
     assert r.status_code == 200 and r.json()["rows"]
     r = client.get("/api/customers?limit=5&risk_band=Low")
     rows = r.json()["rows"]
     assert len(rows) == 5 and all(x["band"] == "Low" for x in rows)
-    probs = [x["probability"] for x in client.get("/api/customers?limit=50").json()["rows"]]
+    probs = [x["probability"]
+             for x in client.get("/api/customers?limit=50").json()["rows"]]
     assert probs == sorted(probs, reverse=True)
 
 
@@ -181,17 +188,20 @@ def test_assistant_bad_input(body):
 
 
 def test_assistant_unknown_customer():
-    assert_generic_error(client.post("/api/assistant", json={"customer_id": "0000-ZZZZZ"}), 404)
+    assert_generic_error(client.post(
+        "/api/assistant", json={"customer_id": "0000-ZZZZZ"}), 404)
 
 
 def test_assistant_error_never_leaks_token(monkeypatch):
     monkeypatch.setenv("HF_TOKEN", FAKE_TOKEN)
 
     def boom(token, messages):
-        raise RuntimeError(f"upstream 401 for token {token} at {config.LLM_URL}")
+        raise RuntimeError(
+            f"upstream 401 for token {token} at {config.LLM_URL}")
 
     monkeypatch.setattr(assistant, "_call_llm", boom)
-    r = client.post("/api/assistant", json={"customer_id": PRESET, "question": "Why?"})
+    r = client.post("/api/assistant",
+                    json={"customer_id": PRESET, "question": "Why?"})
     assert r.status_code == 200
     assert FAKE_TOKEN not in r.text and "401" not in r.text and "router" not in r.text
     assert r.json()["source"] == "template"
@@ -218,6 +228,22 @@ def test_assistant_rate_limit_and_length_cap(monkeypatch):
 
 
 def test_client_ip_ignores_spoofed_left_entries():
-    assert assistant.client_ip({"x-forwarded-for": "1.2.3.4, 8.8.8.8, 10.0.0.1"}, "10.0.0.2") == "8.8.8.8"
-    assert assistant.client_ip({"x-forwarded-for": "garbage"}, "10.0.0.2") == "10.0.0.2"
+    assert assistant.client_ip(
+        {"x-forwarded-for": "1.2.3.4, 8.8.8.8, 10.0.0.1"}, "10.0.0.2") == "8.8.8.8"
+    assert assistant.client_ip(
+        {"x-forwarded-for": "garbage"}, "10.0.0.2") == "10.0.0.2"
     assert assistant.client_ip({}, None) == "unknown"
+
+
+def test_health():
+    r = client.get("/api/health")
+    assert r.status_code == 200
+    assert r.json()["status"] == "ok"
+    assert r.json()["customers"] == len(portfolio.customers)
+
+
+def test_health():
+    r = client.get("/api/health")
+    assert r.status_code == 200
+    assert r.json()["status"] == "ok"
+    assert r.json()["customers"] == len(portfolio.customers)
