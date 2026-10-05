@@ -240,10 +240,3 @@ def test_health():
     assert r.status_code == 200
     assert r.json()["status"] == "ok"
     assert r.json()["customers"] == len(portfolio.customers)
-
-
-def test_health():
-    r = client.get("/api/health")
-    assert r.status_code == 200
-    assert r.json()["status"] == "ok"
-    assert r.json()["customers"] == len(portfolio.customers)
