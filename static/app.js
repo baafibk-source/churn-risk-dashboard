@@ -898,3 +898,40 @@ async function init() {
   route();
 }
 document.addEventListener("DOMContentLoaded", init);
+
+// ---------------------------------------------------------------- drift monitor
+async function initDrift() {
+  const dot = h("span", { class: "drift-dot" });
+  const label = h("span", { text: "Drift: checking" });
+  const body = h("div", { class: "drift-body", hidden: true });
+  const pill = h("button", {
+    class: "drift-pill", type: "button",
+    events: { click: () => { body.hidden = !body.hidden; } },
+  }, dot, label);
+  const root = h("div", { class: "drift", "data-level": "unknown" }, pill, body);
+  document.body.append(root);
+
+  async function refresh() {
+    let r;
+    try { r = await api("/api/drift"); } catch { return; }
+    body.replaceChildren();
+    if (r.status === "insufficient_data") {
+      root.setAttribute("data-level", "unknown");
+      label.textContent = "Drift: collecting data";
+      body.append(h("p", { text: "Seen " + r.n + " of " + r.needed + " scored requests needed." }));
+    } else {
+      root.setAttribute("data-level", r.status);
+      label.textContent = "Drift: " + r.status;
+      body.append(h("p", { text: r.n + " recent requests vs the test set. Score PSI " + r.score.psi.toFixed(2) + "." }));
+      for (const f of r.features.slice(0, 3)) {
+        body.append(h("div", { class: "drift-row" },
+          h("span", { text: f.feature.replaceAll("_", " ") }),
+          h("span", { text: "PSI " + f.psi.toFixed(2) })));
+      }
+    }
+    body.append(h("p", { class: "drift-note", text: "In memory only; resets on restart." }));
+  }
+  await refresh();
+  setInterval(refresh, 10000);
+}
+document.addEventListener("DOMContentLoaded", initDrift);

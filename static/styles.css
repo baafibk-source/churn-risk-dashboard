@@ -719,3 +719,21 @@ details.data summary { cursor: pointer; color: var(--accent); font-weight: 650; 
   .top, .banner-icon, .subpanel, .list-foot { display: none; }
   .card, .kpi { box-shadow: none; }
 }
+
+/* drift monitor */
+.drift { position: fixed; right: 16px; bottom: 16px; z-index: 20; font-size: 13px;
+  display: flex; flex-direction: column-reverse; align-items: flex-end; }
+.drift-pill { display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+  border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface);
+  color: var(--ink); cursor: pointer; font: inherit; }
+.drift-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+.drift[data-level="ok"] .drift-dot { background: var(--low); }
+.drift[data-level="watch"] .drift-dot { background: var(--medium); }
+.drift[data-level="alert"] .drift-dot { background: var(--high); }
+.drift-body { width: 260px; margin-bottom: 8px; padding: 12px; border: 1px solid var(--line);
+  border-radius: 12px; background: var(--surface); color: var(--ink-2); }
+.drift-body[hidden] { display: none; }
+.drift-body p { margin: 0 0 8px; }
+.drift-row { display: flex; justify-content: space-between; padding: 4px 0;
+  border-top: 1px solid var(--line); }
+.drift-note { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
