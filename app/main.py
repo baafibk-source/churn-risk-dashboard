@@ -17,15 +17,21 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from . import assistant, config
 from .features import TENURE_BANDS, PROTECTION_BANDS
 from .model import ChurnModel, Portfolio
-from .schemas import (AssistantRequest, CampaignQuery, CustomerQuery, Profile, SegmentQuery)
+from .schemas import (AssistantRequest, CampaignQuery,
+                      CustomerQuery, Profile, SegmentQuery)
+from .drift import DriftMonitor
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+logging.basicConfig(level=logging.INFO,
+                    format="%(levelname)s %(name)s %(message)s")
 log = logging.getLogger("churn")
 
 model = ChurnModel()
 portfolio = Portfolio(model)
+drift = DriftMonitor([c["profile"] for c in portfolio.customers],
+                     [c["probability"] for c in portfolio.customers])
 
-app = FastAPI(title="Churn dashboard", docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(title="Churn dashboard", docs_url=None,
+              redoc_url=None, openapi_url=None)
 
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
        "font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; "
@@ -105,7 +111,8 @@ async def http_error(request: Request, exc: StarletteHTTPException):
 
 @app.exception_handler(Exception)
 async def unhandled(request: Request, exc: Exception):
-    log.error("unhandled error on %s: %s", request.url.path, type(exc).__name__)
+    log.error("unhandled error on %s: %s",
+              request.url.path, type(exc).__name__)
     return JSONResponse({"error": "Something went wrong."}, status_code=500)
 
 
@@ -116,9 +123,11 @@ def _filter(customers, q):
         v = getattr(q, field)
         if v is not None:
             key = "band" if field == "risk_band" else field
-            out = [c for c in out if (c[key] if key in c else c["profile"][key]) == v]
+            out = [c for c in out if (
+                c[key] if key in c else c["profile"][key]) == v]
     if q.internet_service is not None:
-        out = [c for c in out if c["profile"]["internet_service"] == q.internet_service]
+        out = [c for c in out if c["profile"]
+               ["internet_service"] == q.internet_service]
     return out
 
 
@@ -166,7 +175,9 @@ def summary(q: Annotated[CampaignQuery, Query()]):
     churners = sum(c["churned"] for c in cs)
     exp_in_target = sum(c["probability"] for c in target)
     saved = q.save_rate * exp_in_target
-    revenue_kept = q.save_rate * sum(c["probability"] * c["monthly_charges"] for c in target) * q.horizon_months
+    revenue_kept = q.save_rate * \
+        sum(c["probability"] * c["monthly_charges"]
+            for c in target) * q.horizon_months
     cost = k * q.contact_cost + saved * q.offer_cost
     return {
         "customers": n,
@@ -191,9 +202,11 @@ def segments(q: Annotated[SegmentQuery, Query()]):
     cs = _filter(portfolio.customers, q)
     groups: dict[str, list] = {}
     for c in cs:
-        key = c[q.by] if q.by in ("tenure_band", "protection") else c["profile"][q.by]
+        key = c[q.by] if q.by in (
+            "tenure_band", "protection") else c["profile"][q.by]
         groups.setdefault(str(key), []).append(c)
-    order = {"tenure_band": TENURE_BANDS, "protection": PROTECTION_BANDS}.get(q.by)
+    order = {"tenure_band": TENURE_BANDS,
+             "protection": PROTECTION_BANDS}.get(q.by)
     keys = [k for k in order if k in groups] if order else sorted(
         groups, key=lambda k: -sum(c["probability"] for c in groups[k]) / len(groups[k]))
     rows = []
@@ -230,8 +243,14 @@ def customer(customer_id: Annotated[str, Path(pattern=r"^\d{4}-[A-Z]{5}$", max_l
 def score(profile: Profile):
     p = profile.model_dump()
     s = model.score([p])[0]
+    drift.record(p, s["probability"])
     return {"probability": s["probability"], "band": s["band"], "drivers": s["drivers"],
             "action": s["action"], "base_logodds": s["base_logodds"]}
+
+
+@app.get("/api/drift")
+def drift_report():
+    return drift.report()
 
 
 @app.get("/api/model")
@@ -244,7 +263,8 @@ def ask(body: AssistantRequest, request: Request):
     c = portfolio.by_id.get(body.customer_id)
     if c is None:
         raise StarletteHTTPException(404)
-    ip = assistant.client_ip(request.headers, request.client.host if request.client else None)
+    ip = assistant.client_ip(
+        request.headers, request.client.host if request.client else None)
     return assistant.answer(c, body.question, ip)
 
 
