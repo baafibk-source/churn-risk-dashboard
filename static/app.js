@@ -283,21 +283,25 @@ function assistantBlock(customerId) {
   const q = h("input", { type: "text", maxlength: cfg.question_max_chars, placeholder: "Ask about this customer, e.g. why is the risk high?", "aria-label": "Question for the assistant" });
   const brief = h("button", { class: "btn", type: "button", text: "Brief me" });
   const askBtn = h("button", { class: "btn primary", type: "button", text: "Ask" });
+  const suggested = cfg.suggested_questions.map((t) => h("button", { class: "btn", type: "button", text: t }));
+  const buttons = [brief, askBtn, ...suggested];
   async function run(question) {
-    brief.disabled = askBtn.disabled = true;
+    for (const b of buttons) b.disabled = true;
     out.replaceChildren(h("p", { class: "notice", text: "Thinking…" }));
     try {
       const body = { customer_id: customerId };
       if (question) body.question = question;
       const r = await api("/api/assistant", { method: "POST", body: JSON.stringify(body) });
+      const ai = r.source === "ai";
       out.replaceChildren(
-        h("div", { class: "answer" }, h("span", { class: "src", text: r.source === "ai" ? "AI answer" : "Template briefing" }), r.text),
-        r.notice ? h("p", { class: "notice", text: r.notice }) : null);
+        h("div", { class: "answer" }, h("span", { class: "src", text: ai ? "AI answer" : "Standard answer" }), r.text),
+        ai ? null : h("p", { class: "notice", text: "AI assistant unavailable. Showing a standard answer." }));
     } catch (e) {
       out.replaceChildren(h("p", { class: "notice error", text: e.message }));
-    } finally { brief.disabled = askBtn.disabled = false; }
+    } finally { for (const b of buttons) b.disabled = false; }
   }
   brief.addEventListener("click", () => run(null));
+  for (const b of suggested) b.addEventListener("click", () => run(b.textContent));
   askBtn.addEventListener("click", () => { const v = q.value.trim(); if (v) run(v); });
   q.addEventListener("keydown", (e) => { if (e.key === "Enter") askBtn.click(); });
   return h("section", { class: "subpanel assistant", "aria-label": "Retention assistant" },
@@ -305,8 +309,8 @@ function assistantBlock(customerId) {
     h("div", { class: "sp-body" },
       h("p", { class: "notice", text: cfg.assistant_enabled
         ? "Open-source LLM via Hugging Face. It only explains the model's output and is rate-limited."
-        : "AI is off on this copy (no HF_TOKEN), so you get a template briefing built from the same drivers." }),
-      h("div", { class: "assistant-row" }, brief),
+        : "AI is off on this copy (no HF_TOKEN), so you get standard answers built from the same drivers and model facts." }),
+      h("div", { class: "assistant-row" }, brief, ...suggested),
       cfg.assistant_enabled ? h("div", { class: "assistant-row" }, q, askBtn) : null,
       out));
 }

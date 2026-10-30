@@ -227,6 +227,76 @@ def test_assistant_rate_limit_and_length_cap(monkeypatch):
     assert "Calibrated churn probability" in calls[0][0]["content"]
 
 
+# ------------------------------------------------------------------ standard answers
+# When the LLM is off, failing or rate-limited, each suggested question still gets an
+# answer built from server-side facts: the customer's drivers, the suggested action,
+# or the model card.
+CUSTOMER = portfolio.by_id[PRESET]
+CAL = portfolio.report["calibration"]
+
+
+def check_drivers(text):
+    assert f"{CUSTOMER['probability']:.0%}" in text
+    top = next(d for d in CUSTOMER["drivers"] if d["impact"] > 0)
+    assert top["label"].lower() in text and "not proven causes" in text
+
+
+def check_action(text):
+    assert CUSTOMER["action"]["channel"] in text
+    assert all(s["action"] in text for s in CUSTOMER["action"]["steps"])
+
+
+def check_model(text):
+    assert f"{portfolio.report['roc_auc']:.3f}" in text
+    assert f"{CAL['after']['ece']:.1%}" in text and f"{CAL['observed_rate']:.1%}" in text
+
+
+STANDARD = [(q, check) for q, check in zip(
+    config.SUGGESTED_QUESTIONS, [check_drivers, check_action, check_model])]
+
+
+class RaisingClient:
+    """Stands in for httpx.Client: every request fails, nothing touches the network."""
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def post(self, *args, **kwargs):
+        raise assistant.httpx.ConnectError("upstream unreachable")
+
+
+def test_config_lists_suggested_questions():
+    assert client.get("/api/config").json()["suggested_questions"] == list(config.SUGGESTED_QUESTIONS)
+    assert len(config.SUGGESTED_QUESTIONS) == 3
+
+
+@pytest.mark.parametrize("question,check", STANDARD)
+def test_suggested_question_falls_back_when_llm_client_raises(monkeypatch, question, check):
+    monkeypatch.setenv("HF_TOKEN", FAKE_TOKEN)
+    monkeypatch.setattr(assistant.httpx, "Client", RaisingClient)
+    r = client.post("/api/assistant", json={"customer_id": PRESET, "question": question})
+    assert r.status_code == 200
+    d = r.json()
+    assert d["source"] == "template" and "unavailable" in d["notice"]
+    assert FAKE_TOKEN not in r.text and "unreachable" not in r.text
+    check(d["text"])
+
+
+@pytest.mark.parametrize("question,check", STANDARD)
+def test_suggested_question_answered_without_token(question, check):
+    r = client.post("/api/assistant", json={"customer_id": PRESET, "question": question})
+    assert r.status_code == 200
+    d = r.json()
+    assert d["source"] == "template" and "switched off" in d["notice"]
+    check(d["text"])
+
+
 def test_client_ip_ignores_spoofed_left_entries():
     assert assistant.client_ip(
         {"x-forwarded-for": "1.2.3.4, 8.8.8.8, 10.0.0.1"}, "10.0.0.2") == "8.8.8.8"

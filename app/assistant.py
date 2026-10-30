@@ -93,17 +93,53 @@ def facts(c: dict) -> str:
     return "\n".join(lines)
 
 
-def template(c: dict) -> str:
+def topic(question: str | None) -> str:
+    """Pick the facts a standard answer should use: 'model', 'action', 'drivers' or 'brief'."""
+    q = (question or "").lower()
+    if not q:
+        return "brief"
+    if any(w in q for w in ("reliab", "accura", "trust", "confiden", "calibrat", "how sure", "auc")):
+        return "model"
+    if any(w in q for w in ("should", "action", "offer", "next step", "keep", "retain", "recommend")):
+        return "action"
+    if any(w in q for w in ("why", "driver", "reason", "risk", "factor")):
+        return "drivers"
+    return "brief"
+
+
+def _risk(c: dict) -> str:
+    return f"This customer has a {c['probability']:.0%} calibrated churn probability ({c['band']} risk). "
+
+
+def template(c: dict, question: str | None = None, report: dict | None = None) -> str:
+    """Standard answer built only from server-side facts, used whenever the LLM is not."""
+    kind = topic(question)
     ups = [f"{d['label'].lower()} ({d['value']})" for d in c["drivers"] if d["impact"] > 0][:3]
     downs = [f"{d['label'].lower()} ({d['value']})" for d in c["drivers"] if d["impact"] < 0][:2]
-    t = f"This customer has a {c['probability']:.0%} calibrated churn probability ({c['band']} risk). "
+    steps = c["action"]["steps"]
+    if kind == "model" and report:
+        cal = report["calibration"]
+        return (f"The score comes from a tuned XGBoost model with ROC AUC {report['roc_auc']:.3f} on "
+                f"{report['dataset']['test_rows']:,} held-out test customers. Probabilities are calibrated: "
+                f"calibration error fell from {cal['before']['ece']:.1%} to {cal['after']['ece']:.1%}, and the "
+                f"average predicted churn ({cal['after']['mean_predicted']:.1%}) is close to the actual rate "
+                f"({cal['observed_rate']:.1%}). The data has no complaints, usage or network-quality data, so the "
+                f"model cannot see service problems. {_risk(c)}")
+    if kind == "action":
+        t = f"Suggested channel: {c['action']['channel']}."
+        for i, s in enumerate(steps, 1):
+            t += f" {i}. {s['action']} (driver: {s['because']})"
+        return t
+    t = _risk(c)
     if ups:
         t += "The model's risk is pushed up mainly by " + ", ".join(ups) + ". "
     if downs:
         t += "It is held down by " + ", ".join(downs) + ". "
+    if kind == "drivers":
+        return t + "These are associations in the model, not proven causes."
     t += f"Recommended channel: {c['action']['channel']}."
-    if c["action"]["steps"]:
-        t += " First step: " + c["action"]["steps"][0]["action"]
+    if steps:
+        t += " First step: " + steps[0]["action"]
     return t
 
 
@@ -119,13 +155,13 @@ def _call_llm(token: str, messages: list[dict]) -> str:
     return text
 
 
-def answer(c: dict, question: str | None, ip: str) -> dict:
+def answer(c: dict, question: str | None, ip: str, report: dict | None = None) -> dict:
     token = config.hf_token()
     if not token:
-        return {"source": "template", "text": template(c),
+        return {"source": "template", "text": template(c, question, report),
                 "notice": "The AI assistant is switched off on this copy, so this is a template briefing."}
     if not limiter.allow(ip):
-        return {"source": "template", "text": template(c),
+        return {"source": "template", "text": template(c, question, report),
                 "notice": "AI request limit reached, so this is a template briefing. Try again later."}
     ask = question or ("Write a 3-4 sentence briefing for a retention team: the risk level, the main "
                        "drivers in plain business language, and the suggested next step.")
@@ -138,7 +174,7 @@ def answer(c: dict, question: str | None, ip: str) -> dict:
         text = _call_llm(token, messages)
     except Exception as e:  # never surface upstream errors or the token
         log.warning("assistant fallback: %s", type(e).__name__)
-        return {"source": "template", "text": template(c),
+        return {"source": "template", "text": template(c, question, report),
                 "notice": "The AI assistant is unavailable right now, so this is a template briefing."}
     if len(text) > config.ANSWER_MAX_CHARS:
         text = text[: config.ANSWER_MAX_CHARS].rsplit(" ", 1)[0] + "…"

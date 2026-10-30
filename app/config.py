@@ -25,6 +25,12 @@ ASSISTANT_PER_IP_PER_DAY = int(os.getenv("ASSISTANT_PER_IP_PER_DAY", "20"))
 ASSISTANT_GLOBAL_PER_DAY = int(os.getenv("ASSISTANT_GLOBAL_PER_DAY", "300"))
 QUESTION_MAX_CHARS = 280
 ANSWER_MAX_CHARS = 1200
+# Shown as buttons under each customer; each has a standard answer when the LLM is unavailable.
+SUGGESTED_QUESTIONS = (
+    "Why is this customer at risk?",
+    "What should we do to keep them?",
+    "How reliable is this score?",
+)
 
 MAX_BODY_BYTES = 4096
 
