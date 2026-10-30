@@ -161,6 +161,7 @@ def health():
 def ui_config():
     return {"assistant_enabled": config.hf_token() is not None,
             "question_max_chars": config.QUESTION_MAX_CHARS,
+            "suggested_questions": list(config.SUGGESTED_QUESTIONS),
             "risk_bands": {"high": config.HIGH_RISK, "medium": config.MEDIUM_RISK},
             "presets": portfolio.presets,
             "tenure_bands": TENURE_BANDS, "protection_bands": PROTECTION_BANDS}
@@ -265,7 +266,7 @@ def ask(body: AssistantRequest, request: Request):
         raise StarletteHTTPException(404)
     ip = assistant.client_ip(
         request.headers, request.client.host if request.client else None)
-    return assistant.answer(c, body.question, ip)
+    return assistant.answer(c, body.question, ip, portfolio.report)
 
 
 app.mount("/static", StaticFiles(directory=config.STATIC_DIR), name="static")

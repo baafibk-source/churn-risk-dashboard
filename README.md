@@ -11,6 +11,11 @@ pinned: false
 
 # Churn risk dashboard
 
+**[Live demo](https://huggingface.co/spaces/Baafi02/churn-risk-dashboard)** ·
+**[Code](https://github.com/baafibk-source/churn-risk-dashboard)**
+
+Code: MIT. The IBM Telco dataset is not covered by this licence; see the [data section](#dataset-credit-and-licence).
+
 Finds the telecom customers most likely to leave, explains why with SHAP, and suggests a
 retention action matched to each customer's drivers and contract. It's built on the tuned XGBoost
 model from my MSc Business Analytics dissertation (University of Greenwich), served with FastAPI
